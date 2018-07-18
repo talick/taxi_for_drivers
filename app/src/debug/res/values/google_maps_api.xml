@@ -1,0 +1,24 @@
+<resources>
+    <!--
+    TODO: Before you run your application, you need a Google Maps API key.
+
+    To get one, follow this link, follow the directions and press "Create" at the end:
+
+    https://console.developers.google.com/flows/enableapi?apiid=maps_android_backend&keyType=CLIENT_SIDE_ANDROID&r=62:9C:62:F3:37:46:E1:82:C5:AD:70:3C:2D:9F:93:B8:8E:11:90:E7%3Bcom.example.talgat.distancecounter
+
+    You can also add your credentials to an existing key, using these values:
+
+    Package name:
+    62:9C:62:F3:37:46:E1:82:C5:AD:70:3C:2D:9F:93:B8:8E:11:90:E7
+
+    SHA-1 certificate fingerprint:
+    62:9C:62:F3:37:46:E1:82:C5:AD:70:3C:2D:9F:93:B8:8E:11:90:E7
+
+    Alternatively, follow the directions here:
+    https://developers.google.com/maps/documentation/android/start#get-key
+
+    Once you have your key (it starts with "AIza"), replace the "google_maps_key"
+    string in this file.
+    -->
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyASE9VN6z8Ir_4W8Kkicb8R4nBTeEqIydM</string>
+</resources>

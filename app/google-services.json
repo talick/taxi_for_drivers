@@ -1,0 +1,66 @@
+{
+  "project_info": {
+    "project_number": "423355212715",
+    "firebase_url": "https://taxi-54637.firebaseio.com",
+    "project_id": "taxi-54637",
+    "storage_bucket": "taxi-54637.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423355212715:android:22185ab2c1b09593",
+        "android_client_info": {
+          "package_name": "com.example.talgat.distancecounter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "423355212715-rnm6etussc2e62m3gnjrb82bqrhlvq8n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.talgat.distancecounter",
+            "certificate_hash": "629c62f33746e182c5ad703c2d9f93b88e1190e7"
+          }
+        },
+        {
+          "client_id": "423355212715-u1roc95h2539u1gjsmkgb7ugeg8ku02e.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "423355212715-u1roc95h2539u1gjsmkgb7ugeg8ku02e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkZRhmk_pAmAUglsbIwUID3HMVSYOuYrM"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "423355212715-u1roc95h2539u1gjsmkgb7ugeg8ku02e.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "423355212715-lghopbf1l2lpav0jkl0lpk3tlsg8area.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.Demo-taxi"
+              }
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

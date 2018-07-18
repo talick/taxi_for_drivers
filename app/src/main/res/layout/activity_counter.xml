@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".CounterActivity">
+
+
+    <LinearLayout
+        android:id="@+id/counterLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="1dp"
+        android:weightSum="8"
+        android:orientation="vertical">
+
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="3"
+            android:gravity="center"
+            android:text="25.00"
+            android:textSize="60sp"
+            />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:weightSum="1"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:layout_weight="1">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="0.4"
+                android:text="РАССТОЯНИЕ"
+                android:layout_height="wrap_content"
+                tools:ignore="NestedWeights" />
+
+            <TextView
+                android:id="@+id/distance"
+                android:layout_width="0dp"
+                android:layout_weight="0.3"
+                android:text="0.0 км"
+                android:layout_height="wrap_content"
+                tools:ignore="NestedWeights" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="0.3"
+                android:layout_height="wrap_content"
+                android:text="0.00 сом"
+                android:gravity="end"
+                tools:ignore="NestedWeights" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:weightSum="1"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:layout_weight="1">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="0.4"
+                android:text="ОЖИДАНИЕ"
+                android:layout_height="wrap_content"
+                tools:ignore="NestedWeights" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="0.3"
+                android:text="0.0 км"
+                android:layout_height="wrap_content"
+                tools:ignore="NestedWeights" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="0.3"
+                android:layout_height="wrap_content"
+                android:text="0.00 сом"
+                android:gravity="end"
+                tools:ignore="NestedWeights" />
+        </LinearLayout>
+
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:text="Включить ожидание"
+            android:layout_weight="1"/>
+
+
+        <TextView
+            android:padding="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:onClick="onClick"
+            android:id="@+id/driverStatebtn"
+            android:gravity="center_horizontal"
+            android:elevation="1dp"
+            android:background="@color/colorSecondary"
+            android:text="Уведомить о прибытии"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/mapsLayout"
+        android:layout_above="@+id/bottom_navigation"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <fragment
+            android:id="@+id/map2"
+            android:layout_above="@+id/taxiStateButton"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </RelativeLayout>
+    <android.support.design.widget.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#ffffff"
+        android:theme="@style/ThemeOverlay.Shrine.BottomNavigation"
+        app:menu="@menu/counter_bottom_navigation"
+        />
+</RelativeLayout>

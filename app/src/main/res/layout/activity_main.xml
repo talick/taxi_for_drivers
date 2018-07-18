@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:map="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+
+
+
+    <RelativeLayout
+        android:id="@+id/booksLayout"
+        android:layout_above="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+
+
+        <android.support.v7.widget.RecyclerView
+            android:layout_marginTop="16dp"
+            android:id="@+id/request_list_rv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+
+        <LinearLayout
+            android:id="@+id/bookInfoLayout"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:weightSum="1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:id="@+id/addressText"
+                    tools:text="Курманжан датка 130"
+                    android:maxLines="3"
+                    android:textSize="24sp"
+                    android:textColor="@android:color/black"
+                    android:layout_width="0dp"
+                    android:layout_weight="0.7"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/distance"
+                    android:layout_width="0dp"
+                    android:layout_weight="0.3"
+                    android:paddingLeft="4dp"
+                    android:text="234 km"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+
+            <TextView
+                android:id="@+id/tarifText"
+                android:text="Стандарт 25.00/12.00"
+
+                android:maxLines="1"
+                android:textSize="22sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/taxiStateButton1"
+                android:padding="16dp"
+                android:visibility="gone"
+                android:onClick="onClick"
+                android:clickable="true"
+                android:focusable="true"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp"
+                android:gravity="center_horizontal"
+                android:elevation="1dp"
+                android:background="@color/colorSecondary"
+                android:text="Уведомить о прибытии"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/infoLayout"
+            android:visibility="gone"
+            android:layout_alignParentBottom="true"
+            android:background="@color/colorSecondary"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:elevation="1dp"
+            android:orientation="vertical">
+
+
+            <TextView
+                android:id="@+id/distanceText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Local Distance: "
+                android:padding="16dp"
+                android:textSize="24sp" />
+            <TextView
+                android:id="@+id/distanceFromFirebase"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="FB distance: "
+                android:padding="16dp"
+                android:textSize="24sp" />
+
+            <Button
+                android:id="@+id/btn_start"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="onClick"
+                android:text="Start" />
+        </LinearLayout>
+    </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:id="@+id/mapsLayout"
+        android:layout_above="@+id/bottom_navigation"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <fragment
+            android:id="@+id/map2"
+            android:layout_above="@+id/taxiStateButton"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+
+
+        <TextView
+            android:id="@+id/taxiStateButton"
+            android:padding="16dp"
+            android:visibility="gone"
+            android:onClick="onClick"
+            android:clickable="true"
+            android:focusable="true"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:gravity="center_horizontal"
+            android:layout_alignParentBottom="true"
+            android:elevation="1dp"
+            android:background="@color/colorSecondary"
+            android:text="Уведомить о прибытии"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/statusLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_above="@+id/bottom_navigation"
+        android:layout_margin="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Вы офлайн"
+            android:gravity="center"
+            android:textSize="24sp"
+            android:layout_margin="16dp"
+            />
+
+        <RadioGroup
+            android:id="@+id/radios"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/statusOnline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="На работе"
+                android:onClick="onClickRadio"
+
+                />
+
+            <RadioButton
+                android:id="@+id/statusPause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Перерыв"
+                android:onClick="onClickRadio"
+                />
+
+            <RadioButton
+                android:id="@+id/statusRepair"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ремонт"
+                android:onClick="onClickRadio"
+                />
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/logoutButton"
+            android:onClick="onClick"
+            android:text="Выйти"
+            android:layout_gravity="bottom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <android.support.design.widget.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#ffffff"
+        android:theme="@style/ThemeOverlay.Shrine.BottomNavigation"
+        app:menu="@menu/bottom_navigation"
+        />
+
+</RelativeLayout>
+
+
+
