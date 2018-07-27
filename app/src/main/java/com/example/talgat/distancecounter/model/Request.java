@@ -1,6 +1,8 @@
 package com.example.talgat.distancecounter.model;
 
-public class Request {
+import java.io.Serializable;
+
+public class Request implements Serializable{
 
     private String customerId;
     private String address;
@@ -48,5 +50,20 @@ public class Request {
 
     public void setLongitude(String longitude) {
         this.longitude = longitude;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+
+        Request rec = (Request) obj;
+        return rec.customerId.equals(customerId);
     }
 }

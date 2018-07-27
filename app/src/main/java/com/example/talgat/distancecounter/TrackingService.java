@@ -88,6 +88,12 @@ public class TrackingService  extends Service {
     }
 
 
+    @Override
+    public boolean onUnbind(Intent intent) {
+        stopSelf();
+        return super.onUnbind(intent);
+
+    }
 
     protected BroadcastReceiver stopReceiver = new BroadcastReceiver() {
         @Override

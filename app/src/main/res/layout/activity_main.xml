@@ -17,17 +17,41 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-
-
+        <TextView
+            android:id="@+id/currentRequestText"
+            android:layout_alignParentTop="true"
+            android:textColor="#222222"
+            android:text="Текущие заказы"
+            android:gravity="center"
+            android:layout_margin="8dp"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
         <android.support.v7.widget.RecyclerView
-            android:layout_marginTop="16dp"
+            android:background="#eeeeee"
+            android:layout_marginTop="2dp"
+            android:layout_below="@+id/currentRequestText"
             android:id="@+id/request_list_rv"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 
+        <TextView
+            android:id="@+id/no_books_notification_text_view"
+            android:visibility="gone"
+            android:layout_marginTop="100dp"
+            android:gravity="center_horizontal"
+            android:textSize="30sp"
+            android:text="Нет заказов"
+            android:textColor="@color/black"
+            android:drawableStart="@android:drawable/stat_sys_warning"
+            android:layout_marginStart="64dp"
+            android:layout_marginEnd="64dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-        <LinearLayout
+
+       <!-- <LinearLayout
             android:id="@+id/bookInfoLayout"
             android:orientation="vertical"
             android:visibility="gone"
@@ -84,41 +108,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/infoLayout"
-            android:visibility="gone"
-            android:layout_alignParentBottom="true"
-            android:background="@color/colorSecondary"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:elevation="1dp"
-            android:orientation="vertical">
-
-
-            <TextView
-                android:id="@+id/distanceText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Local Distance: "
-                android:padding="16dp"
-                android:textSize="24sp" />
-            <TextView
-                android:id="@+id/distanceFromFirebase"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="FB distance: "
-                android:padding="16dp"
-                android:textSize="24sp" />
-
-            <Button
-                android:id="@+id/btn_start"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:onClick="onClick"
-                android:text="Start" />
-        </LinearLayout>
+        </LinearLayout>-->
     </RelativeLayout>
 
 
@@ -131,29 +121,10 @@
         android:layout_height="match_parent">
         <fragment
             android:id="@+id/map2"
-            android:layout_above="@+id/taxiStateButton"
             android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-
-
-        <TextView
-            android:id="@+id/taxiStateButton"
-            android:padding="16dp"
-            android:visibility="gone"
-            android:onClick="onClick"
-            android:clickable="true"
-            android:focusable="true"
-            android:textColor="#FFFFFF"
-            android:textSize="24sp"
-            android:gravity="center_horizontal"
-            android:layout_alignParentBottom="true"
-            android:elevation="1dp"
-            android:background="@color/colorSecondary"
-            android:text="Уведомить о прибытии"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
     </RelativeLayout>
 
     <LinearLayout

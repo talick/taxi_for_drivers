@@ -28,6 +28,7 @@
             android:layout_weight="0.3"
             android:paddingLeft="4dp"
             android:text="234 km"
+            android:gravity="center"
             android:layout_height="wrap_content" />
     </LinearLayout>
 

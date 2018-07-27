@@ -12,12 +12,19 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:elevation="1dp"
-        android:weightSum="8"
+        android:weightSum="9"
         android:orientation="vertical">
 
 
+        <TextView
+            android:gravity="center"
+            android:text="Тариф ЭКОНОМ: Посадка 25 сом, 12 сом/км, \nожидание 5 сом/мин"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
 
         <TextView
+            android:id="@+id/total_summ"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="3"
@@ -35,27 +42,25 @@
             android:layout_weight="1">
             <TextView
                 android:layout_width="0dp"
-                android:layout_weight="0.4"
+                android:layout_weight="0.5"
                 android:text="РАССТОЯНИЕ"
+                android:textSize="18sp"
                 android:layout_height="wrap_content"
                 tools:ignore="NestedWeights" />
 
             <TextView
                 android:id="@+id/distance"
                 android:layout_width="0dp"
-                android:layout_weight="0.3"
+                android:layout_weight="0.5"
+                android:textSize="18sp"
                 android:text="0.0 км"
+                android:gravity="center"
                 android:layout_height="wrap_content"
                 tools:ignore="NestedWeights" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="0.3"
-                android:layout_height="wrap_content"
-                android:text="0.00 сом"
-                android:gravity="end"
-                tools:ignore="NestedWeights" />
         </LinearLayout>
+
+        <include layout="@layout/divider" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -66,31 +71,30 @@
             android:layout_weight="1">
             <TextView
                 android:layout_width="0dp"
-                android:layout_weight="0.4"
+                android:layout_weight="0.5"
+                android:textSize="18sp"
                 android:text="ОЖИДАНИЕ"
                 android:layout_height="wrap_content"
                 tools:ignore="NestedWeights" />
 
             <TextView
+                android:id="@+id/waiting_time"
                 android:layout_width="0dp"
-                android:layout_weight="0.3"
-                android:text="0.0 км"
+                android:layout_weight="0.5"
+                android:textSize="18sp"
+                android:gravity="center"
+                android:text="0 мин"
                 android:layout_height="wrap_content"
                 tools:ignore="NestedWeights" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="0.3"
-                android:layout_height="wrap_content"
-                android:text="0.00 сом"
-                android:gravity="end"
-                tools:ignore="NestedWeights" />
         </LinearLayout>
 
-
         <Button
+            android:id="@+id/startTimeCountBnt"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:onClick="onClick"
+            android:visibility="invisible"
             android:text="Включить ожидание"
             android:layout_weight="1"/>
 

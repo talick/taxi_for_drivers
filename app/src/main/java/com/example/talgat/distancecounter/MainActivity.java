@@ -19,6 +19,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -31,7 +32,13 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.talgat.distancecounter.model.DirectionInfo;
 import com.example.talgat.distancecounter.model.Request;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -42,6 +49,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -57,7 +66,12 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.maps.DirectionsApi;
+import com.google.maps.GeoApiContext;
+import com.google.maps.errors.ApiException;
+import com.google.maps.model.DirectionsResult;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,12 +80,14 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback{
+import static com.example.talgat.distancecounter.utils.BitmapUtils.createSmallMarkersIcon;
 
-    private static final int STATE_FINISH_REQUEST = 6;
+public class MainActivity extends AppCompatActivity implements
+        OnMapReadyCallback,
+        GoogleMap.OnMarkerClickListener,
+        GoogleMap.OnMapClickListener{
+
     private GoogleMap mMap;
-    private TextView textView;
-    private TextView fbDistance;
 
     RecyclerView rv;
     private RequestAdapter adapter;
@@ -80,19 +96,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private final String TAG = MainActivity.class.getSimpleName();
     private static final int PERMISSION_REQUEST = 1;
 
-    private static final int CHANGE_STATUS = 1;
-    private static final int SHOW_MAP_STATE = 2;
-    private static final int SHOW_INFO_STATE = 3;
-    private static final int STATE_TAXI_ARRIVED = 4;
-    private static final int STATE_TAXI_HEADING_TO_THE_CUSTOMER = 5;
-
     private static final int CATEGORY_BOOK = 6;
     private static final int CATEGORY_MAP = 7;
     private static final int CATEGORY_STATUS = 8;
 
+    LocationCallback locationCallback;
+    Location currentLocation;
 
-    private TrackingService mBoundService;
-    boolean mIsBound;
     Marker marker;
     Marker startMarker;
     double distan;
@@ -107,7 +117,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
     boolean isOnline = false;
-    private boolean isWorking = false;
 
 
     SupportMapFragment mapFragment;
@@ -115,16 +124,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private ViewGroup statusLayout;
     private ViewGroup mapsLayout;
 
-    private ViewGroup bookInfoLayout;
-    private ViewGroup infoLayout;
-    private TextView taxiStatebutton1;
-    private TextView taxiStatebutton;
+    int online;
 
-    private Button startDistanceCountButton;
-
-    //private CollectionReference requestRef;
-
-    String customerId;
+    Map<String, Marker> customersMarkers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,10 +146,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             mAuth = FirebaseAuth.getInstance();
             mUser = mAuth.getCurrentUser();
 
-            customersBitmap = createSmallMarkersIcon(R.drawable.people_map_marker);
-            driversBitmap = createSmallMarkersIcon(R.drawable.vehile_map_marker);
+            customersBitmap = createSmallMarkersIcon(R.drawable.people_map_marker, this);
+            driversBitmap = createSmallMarkersIcon(R.drawable.vehile_map_marker, this);
 
-
+             online = getIntent().getIntExtra("isOnline", 0);
+            customersMarkers = new HashMap<>();
 
             LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
             if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
@@ -162,6 +165,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                         PERMISSION_REQUEST);
             }
+
+            locationCallback = initLocationCallback();
+            requestLocationUpdates();
 
             initViews();
 
@@ -198,7 +204,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return true;
             }
         });
-        bottomNavigationView.setSelectedItemId(R.id.category_status);
+        if (online == 1) {
+            bottomNavigationView.setSelectedItemId(R.id.category_books);
+            ((RadioButton) findViewById(R.id.statusOnline)).setChecked(true);
+            isOnline = true;
+        }else bottomNavigationView.setSelectedItemId(R.id.category_status);
     }
 
     private void initRadioGr() {
@@ -220,7 +230,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void initRV() {
         rv = findViewById(R.id.request_list_rv);
         rv.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        adapter = new RequestAdapter(requests);
+        rv.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
+        adapter = new RequestAdapter(requests, MainActivity.this);
         rv.setAdapter(adapter);
 
         adapter.setListener(rvItemClicklistener);
@@ -228,7 +239,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         requests = new ArrayList<>();
         Log.e(TAG, "TGA");
 
-        eventListReg = FirebaseFirestore.getInstance().collection("requests")
+        eventListReg = FirebaseFirestore.getInstance().collection("currentRequests")
                 .addSnapshotListener(eventListener);
 
 
@@ -247,19 +258,46 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Request request = dc.getDocument().toObject(Request.class);
                 if (dc.getType() == DocumentChange.Type.ADDED && !requests.contains(request)) {
                     requests.add(request);
+                    LatLng latLng = new LatLng(Double.valueOf(request.getLatitude()), Double.valueOf(request.getLongitude()));
+                    customersMarkers.put(request.getCustomerId(), mMap.addMarker(new MarkerOptions()
+                            .icon(BitmapDescriptorFactory.fromBitmap(customersBitmap))
+                            .title("Customer")
+                            .position(latLng)));
                     Log.e(TAG, "eventListener added: " + request.getAddress());
                 }
 
 
                 if (dc.getType() == DocumentChange.Type.REMOVED) {
 
-                    requests.remove(dc.getOldIndex());
+                    Request request1 = dc.getDocument().toObject(Request.class);
+                    Log.e(TAG, String.valueOf(requests.indexOf(request1)));
+                    requests.remove(request1);
+                    customersMarkers.get(request1.getCustomerId()).remove();
+                    customersMarkers.remove(request1.getCustomerId());
+                }
+
+
+
+                if (requests.isEmpty()) {
+                    hideRV();
+                } else {
+                    showRV();
                 }
             }
 
             adapter.setRequests(requests);
         }
     };
+
+
+    private void hideRV() {
+        rv.setVisibility(View.GONE);
+        findViewById(R.id.no_books_notification_text_view).setVisibility(View.VISIBLE);
+    }
+    private void showRV() {
+        rv.setVisibility(View.VISIBLE);
+        findViewById(R.id.no_books_notification_text_view).setVisibility(View.GONE);
+    }
 
 
     RequestAdapter.OnClickItemListener rvItemClicklistener = new RequestAdapter.OnClickItemListener() {
@@ -277,37 +315,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
 
-                    isWorking = true;
                     eventListReg.remove();
-                    db.collection("requests").document(requests.get(pos).getCustomerId()).delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+                    db.collection("currentRequests").document(requests.get(pos).getCustomerId()).delete().addOnCompleteListener(new OnCompleteListener<Void>() {
                         @Override
                         public void onComplete(@NonNull Task<Void> task) {
                             if (!task.isSuccessful()) {
                                 Toast.makeText(MainActivity.this, "Не удалось принять заказ", Toast.LENGTH_SHORT).show();
                             } else {
-                                rv.setVisibility(View.GONE);
-                                bookInfoLayout.setVisibility(View.VISIBLE);
-                                taxiStatebutton.setVisibility(View.VISIBLE);
-                                taxiStatebutton1.setVisibility(View.VISIBLE);
-
-                                startActivity(new Intent(MainActivity.this, CounterActivity.class));
+                                Intent intent = new Intent(MainActivity.this, CounterActivity.class);
+                                intent.putExtra("request", requests.get(pos));
+                                startActivity(intent);
                                 finish();
-
-                                int permission = ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION);
-
-                                if (permission == PackageManager.PERMISSION_GRANTED) {
-                                    //doBindService();
-                                } else {
-                                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                            PERMISSION_REQUEST);
-                                }
-
-                                if (startMarker == null) {
-                                    startMarker = mMap.addMarker(new MarkerOptions()
-                                            .icon(BitmapDescriptorFactory.fromBitmap(customersBitmap))
-                                            .title("Current Pos")
-                                            .position(new LatLng(Double.valueOf(requests.get(pos).getLatitude()), Double.valueOf(requests.get(pos).getLongitude()))));
-                                }
                             }
                         }
                     });
@@ -333,38 +351,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         booksLayout = findViewById(R.id.booksLayout);
         statusLayout = findViewById(R.id.statusLayout);
         mapsLayout = findViewById(R.id.mapsLayout);
-        bookInfoLayout = findViewById(R.id.bookInfoLayout);
-        infoLayout = findViewById(R.id.infoLayout);
-
-        textView = findViewById(R.id.distanceText);
-        fbDistance = findViewById(R.id.distanceFromFirebase);
-        startDistanceCountButton = findViewById(R.id.btn_start);
-        taxiStatebutton = findViewById(R.id.taxiStateButton);
-        taxiStatebutton1 = findViewById(R.id.taxiStateButton1);
     }
-
-
-
-    private Bitmap createSmallMarkersIcon(int iconRes) {
-        int height = 100;
-        int width = 100;
-        BitmapDrawable bitmapdraw=(BitmapDrawable)getResources().getDrawable(iconRes);
-        Bitmap b=bitmapdraw.getBitmap();
-        return Bitmap.createScaledBitmap(b, width, height, false);
-    }
-
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
+/*        LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));*/
 
         mMap.setMaxZoomPreference(17);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(42.8520033088458, 74.62109389128251), 15));
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+        mMap.getUiSettings().setRotateGesturesEnabled(false);
+        mMap.setOnMarkerClickListener(this);
+        mMap.setOnMapClickListener(this);
 
     }
 
@@ -373,7 +376,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST && grantResults.length == 1
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            doBindService();
         } else {
             finish();
         }
@@ -381,231 +383,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-    private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            mBoundService = ((TrackingService.LocalBinder)service).getService();
-
-            mBoundService.setServiceListener(new TrackingService.MyServiceListener() {
-                @Override
-                public void onChangeLocation(Location location) {
-                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                    lastGeo = latLng;
-                    if (marker == null) {
-                        marker = mMap.addMarker(new MarkerOptions()
-                                .icon(BitmapDescriptorFactory.fromBitmap(driversBitmap))
-                                .title("Current Pos")
-                                .position(latLng));
-
-                        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-                    } else {
-                        marker.setPosition(latLng);
-                    }
-                    LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                    builder.include(marker.getPosition());
-
-                    CameraPosition cameraPosition = CameraPosition.builder()
-                            .target(latLng)
-                            .zoom(15)
-                            .build();
-//                     mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 300));
-                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 2000, null);
-
-
-                    if (isOnline) {
-                        updateGeoLocation(latLng);
-                    }
-                }
-
-                @Override
-                public void onChangeDistance(double distance) {
-                    distance = Math.floor(distance * 100) / 100;
-                    textView.setText(String.format("Distance: %s m.", distance));
-                    distan = distance;
-                }
-            });
-            Toast.makeText(getApplicationContext(), "service connected", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mBoundService = null;
-            Toast.makeText(getApplicationContext(), "service disconnected", Toast.LENGTH_SHORT).show();
-
-        }
-    };
-
-    private void updateGeoLocation(LatLng latLng) {
-
-        CollectionReference refAvailable = db.collection("driverAvailable");
-        CollectionReference refWorking = db.collection("driverWorking");
-
-        Map<String, String> geoMap = new HashMap<>();
-        geoMap.put("latitude", String.valueOf(latLng.latitude));
-        geoMap.put("longitude", String.valueOf(latLng.longitude));
-        if (isWorking) {
-            refWorking.document(mUser.getUid()).set(geoMap);
-            refAvailable.document(mUser.getUid()).delete();
-        } else {
-            refAvailable.document(mUser.getUid()).set(geoMap);
-            refWorking.document(mUser.getUid()).delete();
-        }
-    }
-
-    void doBindService() {
-        // Establish a connection with the service.  We use an explicit
-        // class name because we want a specific service implementation
-        // that we know will be running in our own process (and thus
-        // won't be supporting component replacement by other
-        // applications).
-        bindService(new Intent(this, TrackingService.class),
-                mConnection,
-                Context.BIND_AUTO_CREATE);
-        Log.e(TAG, "bind service");
-        mIsBound = true;
-    }
-
-    void doUnbindService() {
-        if (mIsBound) {
-            // Detach our existing connection.
-            unbindService(mConnection);
-            mIsBound = false;
-        }
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        doUnbindService();
-        if (mBoundService != null) {
-            mBoundService.listener = null;
-            mBoundService.stopSelf();
-        }
     }
 
 
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.btn_start:
-                if (isWorking) {
-
-                    displayCount();
-                } else {
-
-
-                    updateUI(STATE_FINISH_REQUEST);
-                }
-                break;
             case R.id.logoutButton:
                 logout();
                 break;
-            case R.id.setOnlineButton:
-                isOnline = true;
-                updateUI(CHANGE_STATUS);
-                updateUI(SHOW_MAP_STATE);
-                Log.e(TAG, "setOnlineButton");
-                break;
-
-            case R.id.taxiStateButton:
-                notifyDriverArrived();
-                break;
         }
 
     }
 
 
-    private void displayCount() {
-        if (!mBoundService.isTrack) {
 
-            startDistanceCountButton.setText("finish");
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("car_id", "Talgat");
-            Double d = 0.0;
-            data.put("total_distance", d);
-
-            FirebaseFirestore.getInstance().collection("books")
-                    .add(data)
-                    .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                        @Override
-                        public void onSuccess(DocumentReference documentReference) {
-                            mBoundService.currentBookId = documentReference.getId();
-
-                            //startMarker = mMap.addMarker(new MarkerOptions().title("start Pos").position(marker.getPosition()));
-                            Log.e(TAG, "document created");
-                            mBoundService.isTrack = true;
-                            subscribeToUpdates();
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Log.e(TAG, "fail: " + e + "  " + e.getMessage());
-                        }
-                    });
-
-            textView.setText("Distance: 0 m");
-
-
-        } else {
-            mBoundService.isTrack = false;
-            mBoundService.index = 0;
-            textView.setText(String.format("last Distance: %s m", distan));
-            startDistanceCountButton.setText("End request");
-
-
-            if (startMarker != null) {
-                startMarker.remove();
-                startMarker = null;
-            }
-
-            isWorking = false;
-        }
-    }
 
     private void logout() {
         FirebaseAuth.getInstance().signOut();
         startActivity(new Intent(this, LoginActivity.class));
         finish();
-    }
-
-    private void subscribeToUpdates() {
-
-        final DocumentReference docRef = db.collection("books").document(mBoundService.currentBookId);
-        docRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
-                if (e != null) {
-                    Log.d(TAG, "Listen failed.", e);
-
-                    return;
-                }
-
-                if (documentSnapshot != null && documentSnapshot.exists()) {
-                    Log.d(TAG, "Current data: " + documentSnapshot.get("total_distance"));
-
-                    if (documentSnapshot.get("total_distance") instanceof Double) {
-                        Double distance = (Double) documentSnapshot.get("total_distance");
-                        if (distance != null && distance >0) {
-                            distance = (distance * 1000)/ 1000;
-                        }
-                        fbDistance.setText("FB distance: " + distance + "km");
-                    } else if (documentSnapshot.get("total_distance") instanceof Long) {
-                        Long distance = (Long) documentSnapshot.get("total_distance");
-                        if (distance != null && distance >0) {
-                            distance = (distance * 1000)/ 1000;
-                        }
-                        fbDistance.setText("FB distance: " + distance + "km");
-                    }
-
-
-
-                } else {
-                    Log.d(TAG, "Current data: null");
-                }
-            }
-        });
-
     }
 
     private void updateUII(int state) {
@@ -630,66 +429,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-
-    private void updateUI(int state) {
-        Log.e(TAG, "updateUI");
-        switch (state) {
-            case CHANGE_STATUS:
-                if (isOnline) {
-                    booksLayout.setVisibility(View.VISIBLE);
-                    statusLayout.setVisibility(View.GONE);
-                } else {
-                    statusLayout.setVisibility(View.VISIBLE);
-                    booksLayout.setVisibility(View.GONE);
-                }
-                break;
-
-            case STATE_TAXI_HEADING_TO_THE_CUSTOMER:
-                taxiStatebutton.setVisibility(View.VISIBLE);
-                break;
-
-            case STATE_TAXI_ARRIVED:
-                taxiStatebutton.setVisibility(View.GONE);
-                infoLayout.setVisibility(View.VISIBLE);
-                break;
-
-            case STATE_FINISH_REQUEST:
-                infoLayout.setVisibility(View.GONE);
-                infoLayout.setVisibility(View.GONE);
-                rv.setVisibility(View.VISIBLE);
-                Objects.requireNonNull(mapFragment.getView()).setVisibility(View.GONE);
-                startDistanceCountButton.setText("Start");
-        }
-    }
-
-
-
-
-
-
-    private void changeCurrentStatus(String docId) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("driverId", mUser.getUid());
-
-        db.collection("customerRequest").document(docId).update(map);
-        updateUI(STATE_TAXI_HEADING_TO_THE_CUSTOMER);
-        isWorking = true;
-    }
-
-
-
-    private void notifyDriverArrived() {
-/*        Map<String, Object> map = new HashMap<>();
-        map.put("arrived", true);
-
-        db.collection("customerRequest").document(customerId).update(map);
-*/
-        updateUI(STATE_TAXI_ARRIVED);
-    }
-
-
-
-
     public void onClickRadio(View view) {
         boolean checked = ((RadioButton) view).isChecked();
         // Получаем нажатый переключатель
@@ -704,7 +443,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (checked){
                     Log.e(TAG, "Выбран pause");
                     isOnline = false;
-                    db.collection("driverAvailable").document(mUser.getUid()).delete();
 
                 }
                 break;
@@ -712,11 +450,146 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     if (checked){
                         Log.e(TAG, "Выбран repair");
                         isOnline = false;
-                        db.collection("driverAvailable").document(mUser.getUid()).delete();
 
                     }
                     break;
 
+        }
+    }
+
+
+
+
+    private void requestLocationUpdates() {
+        LocationRequest request = new LocationRequest();
+        request.setInterval(2000);
+        request.setFastestInterval(2000);
+        request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(getApplicationContext());
+        int permission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
+        if (permission == PackageManager.PERMISSION_GRANTED) {
+            client.requestLocationUpdates(request, locationCallback, null);
+        }
+    }
+
+    private LocationCallback initLocationCallback() {
+        return new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                Location location = locationResult.getLastLocation();
+
+                if (location != null) {
+
+                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+
+                    currentLocation = location;
+
+                    if (marker == null) {
+                        marker = mMap.addMarker(new MarkerOptions()
+                                .icon(BitmapDescriptorFactory.fromBitmap(driversBitmap))
+                                .title("Current Pos")
+                                .position(latLng));
+                    } else {
+                        marker.setPosition(latLng);
+                    }
+                }
+
+            }
+        };
+    }
+
+    Polyline polyline;
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        if (marker.equals(startMarker))
+            return false;
+
+        GeoApiContext geoApiContext = new GeoApiContext.Builder()
+                .apiKey("AIzaSyASE9VN6z8Ir_4W8Kkicb8R4nBTeEqIydM")
+                .build();
+
+        Log.e(TAG, "onmarker Click2");
+        DirectionsResult result = null;
+        try {
+            Log.e(TAG, "onmarker Click");
+            result = DirectionsApi.newRequest(geoApiContext)
+                    .origin(new com.google.maps.model.LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()))
+                    .destination(new com.google.maps.model.LatLng(marker.getPosition().latitude, marker.getPosition().longitude))
+                    .await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ApiException e) {
+            e.printStackTrace();
+        }
+
+        List<com.google.maps.model.LatLng> path = result.routes[0].overviewPolyline.decodePath();
+        if (polyline == null) {
+            PolylineOptions line = new PolylineOptions();
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+            for (int i = 0; i<path.size(); i++) {
+                line.add(new LatLng(path.get(i).lat, path.get(i).lng));
+                builder.include(new LatLng(path.get(i).lat, path.get(i).lng));
+            }
+
+            line.width(16f).color(R.color.colorAccent);
+            polyline = mMap.addPolyline(line);
+        } else {
+            List<LatLng> list = new ArrayList<>();
+            for (int i = 0; i < path.size(); i++) {
+                list.add(new LatLng(path.get(i).lat, path.get(i).lng));
+            }
+            polyline.setPoints(list);
+        }
+
+        String info = getEndLocationTitle(result);
+        Log.e(TAG, info);
+        marker.setTitle(info);
+
+
+        return true;
+    }
+
+    private DirectionInfo createDirecitonInfo(Request request) {
+        GeoApiContext geoApiContext = new GeoApiContext.Builder()
+                .apiKey("AIzaSyASE9VN6z8Ir_4W8Kkicb8R4nBTeEqIydM")
+                .build();
+
+        Log.e(TAG, "onmarker Click2");
+        DirectionsResult result = null;
+        try {
+            Log.e(TAG, "onmarker Click");
+            result = DirectionsApi.newRequest(geoApiContext)
+                    .origin(new com.google.maps.model.LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()))
+                    .destination(new com.google.maps.model.LatLng(Double.valueOf(request.getLatitude()), Double.valueOf(request.getLongitude())))
+                    .await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ApiException e) {
+            e.printStackTrace();
+        }
+
+        List<com.google.maps.model.LatLng> path = result.routes[0].overviewPolyline.decodePath();
+        long distance = result.routes[0].legs[0].distance.inMeters;
+        String time = result.routes[0].legs[0].duration.humanReadable;
+
+        return new DirectionInfo(request.getCustomerId(), path, time, distance);
+    }
+
+    private String getEndLocationTitle(DirectionsResult results){
+        return  "Time :"+ results.routes[0].legs[0].duration.humanReadable +
+                " Distance :" + results.routes[0].legs[0].distance.humanReadable;
+    }
+    @Override
+    public void onMapClick(LatLng latLng) {
+        if (polyline != null) {
+            polyline.remove();
+            polyline = null;
         }
     }
 }
